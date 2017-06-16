@@ -7,7 +7,7 @@ INSTALL=install -D
 INSTALL_DATA=$(INSTALL) -m 644
 
 BINDIR=$(HOME)/bin
-#MANDIR=$(DESTDIR)/usr/share/man/man6
+MANDIR=$(DESTDIR)/usr/share/man/man6
 
 STRIP=strip
 ifeq ($(OS),Windows_NT)
