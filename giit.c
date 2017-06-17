@@ -3,13 +3,13 @@
  *
  */
 
-#if defined (_WIN32) && !defined(WIN32)
-#    define WIN32
+#if defined(_WIN32) && !defined(WIN32)
+#define WIN32
 #else
-     /* fileno() */
-#    define _POSIX_C_SOURCE 1
-     /* usleep() */
-#    define _DEFAULT_SOURCE
+/* fileno() */
+#define _POSIX_C_SOURCE 1
+/* usleep() */
+#define _DEFAULT_SOURCE
 #endif
 
 #include <stdio.h>
@@ -17,49 +17,61 @@
 #include <string.h>
 
 #if defined(WIN32) && !defined(__CYGWIN__)
-#    include <process.h>
-#    include <io.h>
+#include <process.h>
+#include <io.h>
 
-    /* usleep() doesn't exist on MSVC, instead use Sleep() from Win32 API */
-#    define usleep(a) Sleep((a) / 1000)
+/* usleep() doesn't exist on MSVC, instead use Sleep() from Win32 API */
+#define usleep(a) Sleep((a) / 1000)
 
-    /*
+/*
      * exec*() on MSVC makes the parent process exit; that means that giit.exe will finish as git is starting,
      * which causes cmd.exe to print its prompt over git's output (because it sees that the child process has
      * finished). The solution is to use synchronous spawn*(): it will make giit.exe to wait until git finishes.
      */
-#    define execv(a, b) do { i = _spawnv(_P_WAIT, (a), (b)); if (i != -1) return i; } while(0)
-#    define execvp(a, b) do { i = _spawnvp(_P_WAIT, (a), (b)); if (i != -1) return i; } while(0)
+#define execv(a, b)                     \
+    do                                  \
+    {                                   \
+        i = _spawnv(_P_WAIT, (a), (b)); \
+        if (i != -1)                    \
+            return i;                   \
+    } while (0)
+#define execvp(a, b)                     \
+    do                                   \
+    {                                    \
+        i = _spawnvp(_P_WAIT, (a), (b)); \
+        if (i != -1)                     \
+            return i;                    \
+    } while (0)
 
 #else
-#    include <unistd.h>
+#include <unistd.h>
 #endif
 
 #ifndef WIN32
-#    include <sys/ioctl.h>
+#include <sys/ioctl.h>
 #else
-#    include <windows.h>
+#include <windows.h>
 HANDLE WIN_CONSOLE;
 #endif
 
 /* SunOS defines winsize in termios.h */
 #if defined(__sun) && defined(__SVR4)
-#    include <sys/termios.h>
+#include <sys/termios.h>
 #endif
 
 #define GIT_NAME "git"
 
 #ifndef giit_SPEED
-#    define giit_SPEED 1000
+#define giit_SPEED 1000
 #endif
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_RED "\x1b[31m"
+#define ANSI_COLOR_GREEN "\x1b[32m"
+#define ANSI_COLOR_YELLOW "\x1b[33m"
+#define ANSI_COLOR_BLUE "\x1b[34m"
 #define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_CYAN "\x1b[36m"
+#define ANSI_COLOR_RESET "\x1b[0m"
 
 int term_width(void);
 void init_space(void);
@@ -68,7 +80,7 @@ void move_to_top(void);
 void line_at(int start_x, const char *s);
 void clear_car(int x);
 
-typedef void (*draw_fn_t) (int x);
+typedef void (*draw_fn_t)(int x);
 void draw_std(int x);
 void draw_push(int x);
 void draw_pull(int x);
@@ -88,7 +100,8 @@ int main(int argc, char **argv)
     draw_fn_t draw_fn;
 
     tmp = getenv("giit_SPEED");
-    if (!tmp || sscanf(tmp, "%u", &giit_speed) != 1) {
+    if (!tmp || sscanf(tmp, "%u", &giit_speed) != 1)
+    {
         giit_speed = giit_SPEED;
     }
     open_term();
@@ -97,8 +110,9 @@ int main(int argc, char **argv)
 
     draw_fn = select_command(argc, argv);
     init_space();
-    for (i = 0; i < TERM_WIDTH; i++) {
-    //for (i = -20; i < TERM_WIDTH; i++) {
+    for (i = 0; i < TERM_WIDTH; i++)
+    {
+        //for (i = -20; i < TERM_WIDTH; i++) {
         draw_fn(i);
         clear_car(i);
     }
@@ -106,9 +120,12 @@ int main(int argc, char **argv)
     fflush(TERM_FH);
 
     git_path = getenv("GIT");
-    if (git_path) {
+    if (git_path)
+    {
         execv(git_path, argv);
-    } else {
+    }
+    else
+    {
         execvp(GIT_NAME, argv);
     }
     /* error in exec if we land here */
@@ -120,7 +137,8 @@ draw_fn_t select_command(int argc, char **argv)
 {
     int i;
 
-    for (i = 1; i < argc; i++) {
+    for (i = 1; i < argc; i++)
+    {
         if (argv[i][0] == '-')
             continue;
         if (!strcmp(argv[i], "push"))
@@ -134,7 +152,7 @@ draw_fn_t select_command(int argc, char **argv)
 
 void init_space(void)
 {
-    fputs("\n\n\n\n\n\n\n", TERM_FH);   /* 8 lines, to not remove the PS1 line */
+    fputs("\n\n\n\n\n\n\n", TERM_FH); /* 8 lines, to not remove the PS1 line */
     fflush(TERM_FH);
 }
 
@@ -194,7 +212,8 @@ void line_at(int start_x, const char *s)
     size_t i;
     if (start_x > 1)
         move_to_x(start_x);
-    for (x = start_x, i = 0; i < strlen(s); x++, i++) {
+    for (x = start_x, i = 0; i < strlen(s); x++, i++)
+    {
         if (x > 0 && x < TERM_WIDTH)
             fputc(s[i], TERM_FH);
     }
@@ -219,14 +238,17 @@ void draw_std(int x)
     line_at(x, "  /  /``````|``````\\\\");
     line_at(x, " /  /_______|_______\\\\________");
     line_at(x, "|]      giit |'       |        |]");
-    if (x % 2) {
-    line_at(x, "=  .-:-.    |________|  .-:-.  =");
-    line_at(x, " `  -+-  --------------  -+-  '");
-    line_at(x, "   '-:-'                '-:-'  ");
-    } else {
-    line_at(x, "=  .:-:.    |________|  .:-:.  =");
-    line_at(x, " `   X   --------------   X   '");
-    line_at(x, "   ':-:'                ':-:'  ");
+    if (x % 2)
+    {
+        line_at(x, "=  .-:-.    |________|  .-:-.  =");
+        line_at(x, " `  -+-  --------------  -+-  '");
+        line_at(x, "   '-:-'                '-:-'  ");
+    }
+    else
+    {
+        line_at(x, "=  .:-:.    |________|  .:-:.  =");
+        line_at(x, " `   X   --------------   X   '");
+        line_at(x, "   ':-:'                ':-:'  ");
     }
     /* *INDENT-ON* */
     usleep(FRAME_TIME);
@@ -240,14 +262,17 @@ void draw_push(int x)
     line_at(x, "  /--\\   /  /``````|``````\\\\");
     line_at(x, "  \\__/  /  /_______|_______\\\\________");
     line_at(x, "   ||-< |]      giit |'       |        |]");
-    if (x % 2) {
-    line_at(x, "   ||-< =  .-:-.    |________|  .-:-.  =");
-    line_at(x, "   ||    `  -+-  --------------  -+-  '");
-    line_at(x, "   ||      '-:-'                '-:-'  ");
-    } else {
-    line_at(x, "   ||-< =  .:-:.    |________|  .:-:.  =");
-    line_at(x, "   /\\    `   X   --------------   X   '");
-    line_at(x, "  /  \\     ':-:'                ':-:'  ");
+    if (x % 2)
+    {
+        line_at(x, "   ||-< =  .-:-.    |________|  .-:-.  =");
+        line_at(x, "   ||    `  -+-  --------------  -+-  '");
+        line_at(x, "   ||      '-:-'                '-:-'  ");
+    }
+    else
+    {
+        line_at(x, "   ||-< =  .:-:.    |________|  .:-:.  =");
+        line_at(x, "   /\\    `   X   --------------   X   '");
+        line_at(x, "  /  \\     ':-:'                ':-:'  ");
     }
     /* *INDENT-ON* */
     usleep(FRAME_TIME * 10);
@@ -260,7 +285,8 @@ void draw_pull(int x)
     char buff[100];
     line_at(x, "                                       ");
     line_at(x, "                                       ");
-    if (x1 == 0) {
+    if (x1 == 0)
+    {
         sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED, ANSI_COLOR_RESET);
         line_at(x, buff);
         sprintf(buff, "                                       ");
@@ -271,7 +297,9 @@ void draw_pull(int x)
         line_at(x, buff);
         sprintf(buff, "     %s|%s                                 ", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
         line_at(x, buff);
-    } else if (x1 == 1) {
+    }
+    else if (x1 == 1)
+    {
         line_at(x, "                                *      ");
         sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED, ANSI_COLOR_RESET);
         line_at(x, buff);
@@ -279,7 +307,9 @@ void draw_pull(int x)
         sprintf(buff, "     %s*%s                                 ", ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
         line_at(x, buff);
         line_at(x, "                                       ");
-    } else if (x1 == 2) {
+    }
+    else if (x1 == 2)
+    {
         line_at(x, "                                       ");
         sprintf(buff, "                                 %s.%s     ", ANSI_COLOR_BLUE, ANSI_COLOR_RESET);
         line_at(x, buff);
@@ -287,18 +317,22 @@ void draw_pull(int x)
         line_at(x, buff);
         line_at(x, "     .                                 ");
         line_at(x, "                                       ");
-    } else if (x1 == 3) {
+    }
+    else if (x1 == 3)
+    {
         line_at(x, "                                       ");
         line_at(x, "                                       ");
         line_at(x, "                                       ");
         sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED, ANSI_COLOR_RESET);
         line_at(x, buff);
         line_at(x, "                                       ");
-    } else {
+    }
+    else
+    {
         line_at(x, "                                       ");
         line_at(x, "                                       ");
         sprintf(buff, "                                 %s*%s     ", ANSI_COLOR_BLUE, ANSI_COLOR_RESET);
-        line_at(x, buff); 
+        line_at(x, buff);
         line_at(x, " .                                     ");
         line_at(x, "             ~=[,,_,,]:3               ");
     }
