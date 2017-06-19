@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 CC=cc
-CFLAGS+=-O2 -std=c89 -Wpedantic -Wall -Wextra -Wunused -Wshadow -Wdouble-promotion -Wstrict-overflow=5
+CFLAGS+=-O2 -std=gnu99 -Wpedantic -Wall -Wextra -Wunused -Wshadow -Wstrict-overflow=5
 
 INSTALL=install -D
 INSTALL_DATA=$(INSTALL) -m 644
