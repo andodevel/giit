@@ -43,11 +43,11 @@
 #define ANSI_COLOR_RESET "\x1b[0m"
 #endif
 
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 
 int term_width(void);
 void init_space(void);
@@ -70,36 +70,30 @@ unsigned int LINES_NUMBER = 8;
 unsigned int BUFFER_SIZE = 1024;
 
 int main(int argc, char **argv) {
-  int i;
-  char *git_path;
   char *tmp;
-  unsigned int giit_speed;
   draw_fn_t draw_fn;
+  int errorCode = 0;
 
-  tmp = getenv("GIIT_SPEED");
-  if (!tmp || sscanf(tmp, "%u", &giit_speed) != 1) {
-    giit_speed = GIIT_SPEED;
+  TERM_FH = fopen("/dev/tty", "w");
+  if (!TERM_FH) {
+    errorCode = 1;
   }
-  open_term();
-  TERM_WIDTH = term_width();
-  FRAME_TIME = 1000 * 1000 * 10 / (giit_speed + TERM_WIDTH + 1);
+  if (!errorCode) {
+    TERM_WIDTH = term_width();
+    FRAME_TIME = 1000 * 1000 * 10 / (GIIT_SPEED + TERM_WIDTH + 1);
 
-  draw_fn = select_command(argc, argv);
-  init_space();
-  for (i = -20; i < TERM_WIDTH; i++) {
-    draw_fn(i);
-    clear_drawing(i);
-  }
-  move_to_top();
-  fflush(TERM_FH);
+    draw_fn = select_command(argc, argv);
+    init_space();
+    for (int i = -20; i < TERM_WIDTH; i++) {
+      draw_fn(i);
+      clear_drawing(i);
+    }
+    move_to_top();
+    fflush(TERM_FH);
 
-  git_path = getenv("GIT");
-  if (git_path) {
-    execv(git_path, argv);
-  } else {
     execvp(GIT_NAME, argv);
   }
-  /* error in exec if we land here */
+
   perror(GIT_NAME);
   return 1;
 }
@@ -128,12 +122,6 @@ void init_space(void) {
   }
   fputs(buff, TERM_FH);
   fflush(TERM_FH);
-}
-
-void open_term() {
-  TERM_FH = fopen("/dev/tty", "w");
-  if (!TERM_FH)
-    TERM_FH = stdout;
 }
 
 int term_width(void) {
