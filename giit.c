@@ -9,12 +9,6 @@
 #define _DEFAULT_SOURCE
 #define _XOPEN_SOURCE
 
-#define GIT_NAME "git"
-
-#ifndef GIIT_SPEED
-#define GIIT_SPEED 1000
-#endif
-
 #ifndef ANSI_COLOR_RED
 #define ANSI_COLOR_RED "\x1b[31m"
 #endif
@@ -49,98 +43,149 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-int term_width(void);
-void init_space(void);
-void open_term();
-void move_to_top(void);
-void line_at(int start_x, const char *s);
-void clear_drawing(int x);
-
-typedef void (*draw_fn_t)(int x);
-void draw_std(int x);
-void draw_push(int x);
-void draw_pull(int x);
-draw_fn_t select_command(int argc, char **argv);
+static const char *GIT_CMD = "git";
+static const char *GIT_CL = "clone";
+static const char *GIT_PSH = "push";
+static const char *GIT_PL = "pull";
+static const char *GIT_STS = "status";
+static const int GIIT_SPEED = 1000;
 
 FILE *TERM_FH;
 int TERM_WIDTH;
-unsigned int FRAME_TIME;
-unsigned int PUSH_MOVE[] = {0, 1, 2, 3, 4, 3, 2, 1};
-unsigned int LINES_NUMBER = 8;
-unsigned int BUFFER_SIZE = 1024;
+int FRAME_TIME;
+static const int START_AT_Y = -20;
+static const int PUSH_MOVEMENT[] = {0, 1, 2, 3, 4, 3, 2, 1};
+static const int NUMBER_OF_LINE = 8;
+static const int BUFFER_SIZE = 1024;
 
-int main(int argc, char **argv) {
+void get_term();
+int get_term_width(void);
+void init(void);
+void clear_all(int x);
+void clear_at(int x);
+void move_to_top(void);
+void draw(int x, const char *s);
+void draw_empty(int x);
+
+void draw_std(int x);
+void draw_clone(int x);
+void draw_push(int x);
+void draw_pull(int x);
+void draw_status(int x);
+typedef void (*draw_fn)(int x);
+draw_fn resolve_draw_fn(int argc, char **argv);
+
+int main(int argc, char **argv)
+{
   char *tmp;
-  draw_fn_t draw_fn;
+  draw_fn draw_fn;
   int errorCode = 0;
 
   TERM_FH = fopen("/dev/tty", "w");
-  if (!TERM_FH) {
+  if (!TERM_FH)
+  {
     errorCode = 1;
   }
-  if (!errorCode) {
-    TERM_WIDTH = term_width();
+  if (!errorCode)
+  {
+    TERM_WIDTH = get_term_width();
     FRAME_TIME = 1000 * 1000 * 10 / (GIIT_SPEED + TERM_WIDTH + 1);
 
-    draw_fn = select_command(argc, argv);
-    init_space();
-    for (int i = -20; i < TERM_WIDTH; i++) {
+    draw_fn = resolve_draw_fn(argc, argv);
+    init();
+    for (int i = START_AT_Y; i < TERM_WIDTH; ++i)
+    {
       draw_fn(i);
-      clear_drawing(i);
+      clear_all(i);
     }
     move_to_top();
     fflush(TERM_FH);
 
-    execvp(GIT_NAME, argv);
+    execvp(GIT_CMD, argv);
   }
 
-  perror(GIT_NAME);
+  perror(GIT_CMD);
   return 1;
 }
 
-draw_fn_t select_command(int argc, char **argv) {
-  int i;
-
-  for (i = 1; i < argc; i++) {
-    if (argv[i][0] == '-')
-      continue;
-    if (!strcmp(argv[i], "push"))
-      return draw_push;
-    if (!strcmp(argv[i], "pull"))
-      return draw_pull;
-    break;
-  }
-  return draw_std;
+int get_term_width(void)
+{
+  struct winsize w;
+  ioctl(fileno(TERM_FH), TIOCGWINSZ, &w);
+  return w.ws_col;
 }
 
-void init_space(void) {
-  unsigned int i;
+draw_fn resolve_draw_fn(int argc, char **argv)
+{
+  //TODO: add more art work!!!
+  /*
+  if (argc > 1)
+  {
+    if (!strcmp(argv[1], GIT_PSH))
+    {
+      return &draw_push;
+    }
+
+    if (!strcmp(argv[1], GIT_PL))
+    {
+      return &draw_pull;
+    }
+  }
+  */
+
+  return &draw_std;
+}
+
+void init(void)
+{
   char buff[BUFFER_SIZE];
   strcpy(buff, "");
-  for (i = 0; i < LINES_NUMBER; ++i) {
+  for (size_t i = 0; i < NUMBER_OF_LINE; ++i)
+  {
     strcat(buff, "\n");
   }
   fputs(buff, TERM_FH);
   fflush(TERM_FH);
 }
 
-int term_width(void) {
-  struct winsize w;
-  ioctl(fileno(TERM_FH), TIOCGWINSZ, &w);
-  return w.ws_col;
+void clear_all(int x)
+{
+  move_to_top();
+  for (size_t i = 1; i < NUMBER_OF_LINE; ++i)
+  {
+    clear_at(x);
+  }
 }
 
-void move_to_top(void) { fprintf(TERM_FH, "\033[7A"); }
+void clear_at(int x)
+{
+  draw_empty(x);
+}
 
-void move_to_x(int x) { fprintf(TERM_FH, "\033[%dC", x); }
+void draw_empty(int x) {
+  draw(x, "                                               ");
+}
 
-void line_at(int start_x, const char *s) {
-  int x;
+void move_to_top(void)
+{
+  fprintf(TERM_FH, "\033[7A");
+}
+
+void move_to_x(int x)
+{
+  fprintf(TERM_FH, "\033[%dC", x);
+}
+
+void draw(int x, const char *s)
+{
+  int y;
   size_t i;
-  if (start_x > 1)
-    move_to_x(start_x);
-  for (x = start_x, i = 0; i < strlen(s); x++, i++) {
-    if (x > 0 && x < TERM_WIDTH)
+
+  if (x > 1) {
+    move_to_x(x);
+  }
+  for (y = x, i = 0; i < strlen(s); y++, i++) {
+    if (y > 0 && y < TERM_WIDTH)
       fputc(s[i], TERM_FH);
   }
   fputc('\n', TERM_FH);
@@ -148,113 +193,75 @@ void line_at(int start_x, const char *s) {
   fflush(TERM_FH);
 }
 
-void draw_std(int x) {
-  move_to_top();
-  line_at(x, "   ,---------------.");
-  line_at(x, "  /  /``````|``````\\\\");
-  line_at(x, " /  /_______|_______\\\\________");
-  line_at(x, "|]      giit |'       |        |]");
-  if (x % 2) {
-    line_at(x, "=  .-:-.    |________|  .-:-.  =");
-    line_at(x, " `  -+-  --------------  -+-  '");
-    line_at(x, "   '-:-'                '-:-'  ");
-  } else {
-    line_at(x, "=  .:-:.    |________|  .:-:.  =");
-    line_at(x, " `   X   --------------   X   '");
-    line_at(x, "   ':-:'                ':-:'  ");
-  }
-
-  usleep(FRAME_TIME);
-}
-
-void draw_push(int x) {
-  move_to_top();
-  line_at(x, "   __      ,---------------.");
-  line_at(x, "  /--\\   /  /``````|``````\\\\");
-  line_at(x, "  \\__/  /  /_______|_______\\\\________");
-  line_at(x, "   ||-< |]      giit |'       |        |]");
-  if (x % 2) {
-    line_at(x, "   ||-< =  .-:-.    |________|  .-:-.  =");
-    line_at(x, "   ||    `  -+-  --------------  -+-  '");
-    line_at(x, "   ||      '-:-'                '-:-'  ");
-  } else {
-    line_at(x, "   ||-< =  .:-:.    |________|  .:-:.  =");
-    line_at(x, "   /\\    `   X   --------------   X   '");
-    line_at(x, "  /  \\     ':-:'                ':-:'  ");
-  }
-
-  usleep(FRAME_TIME * 10);
-}
-
-void draw_pull(int x) {
-  int x1 = PUSH_MOVE[x % 8];
+void draw_std(int x)
+{
+  int x1 = PUSH_MOVEMENT[(x - START_AT_Y) % 8];
   move_to_top();
   char buff[100];
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
-  if (x1 == 0) {
+
+  draw(x, "                                       ");
+  draw(x, "                                       ");
+  if (x1 == 0)
+  {
     sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
             ANSI_COLOR_RESET);
-    line_at(x, buff);
+    draw(x, buff);
     sprintf(buff, "                                       ");
-    line_at(x, buff);
+    draw(x, buff);
     sprintf(buff, "     %s|%s                                 ",
             ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-    line_at(x, buff);
+    draw(x, buff);
     sprintf(buff, "   %s--*--%s                               ",
             ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-    line_at(x, buff);
+    draw(x, buff);
     sprintf(buff, "     %s|%s                                 ",
             ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-    line_at(x, buff);
-  } else if (x1 == 1) {
-    line_at(x, "                                *      ");
+    draw(x, buff);
+  }
+  else if (x1 == 1)
+  {
+    draw(x, "                                *      ");
     sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
             ANSI_COLOR_RESET);
-    line_at(x, buff);
-    line_at(x, "                                       ");
+    draw(x, buff);
+    draw(x, "                                       ");
     sprintf(buff, "     %s*%s                                 ",
             ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
-    line_at(x, buff);
-    line_at(x, "                                       ");
-  } else if (x1 == 2) {
-    line_at(x, "                                       ");
+    draw(x, buff);
+    draw(x, "                                       ");
+  }
+  else if (x1 == 2)
+  {
+    draw(x, "                                       ");
     sprintf(buff, "                                 %s.%s     ",
             ANSI_COLOR_BLUE, ANSI_COLOR_RESET);
-    line_at(x, buff);
+    draw(x, buff);
     sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
             ANSI_COLOR_RESET);
-    line_at(x, buff);
-    line_at(x, "     .                                 ");
-    line_at(x, "                                       ");
-  } else if (x1 == 3) {
-    line_at(x, "                                       ");
-    line_at(x, "                                       ");
-    line_at(x, "                                       ");
+    draw(x, buff);
+    draw(x, "     .                                 ");
+    draw(x, "                                       ");
+  }
+  else if (x1 == 3)
+  {
+    draw(x, "                                       ");
+    draw(x, "                                       ");
+    draw(x, "                                       ");
     sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
             ANSI_COLOR_RESET);
-    line_at(x, buff);
-    line_at(x, "                                       ");
-  } else {
-    line_at(x, "                                       ");
-    line_at(x, "                                       ");
+    draw(x, buff);
+    draw(x, "                                       ");
+  }
+  else
+  {
+    draw(x, "                                       ");
+    draw(x, "                                       ");
     sprintf(buff, "                                 %s*%s     ",
             ANSI_COLOR_BLUE, ANSI_COLOR_RESET);
-    line_at(x, buff);
-    line_at(x, " .                                     ");
-    line_at(x, "             ~=[,,_,,]:3               ");
+    draw(x, buff);
+    draw(x, " .                                     ");
+    draw(x, "             ~=[,,_,,]:3               ");
   }
 
   usleep(FRAME_TIME * 8);
-}
-
-void clear_drawing(int x) {
-  move_to_top();
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
-  line_at(x, "                                       ");
 }
