@@ -55,7 +55,7 @@ int TERM_WIDTH;
 int FRAME_TIME;
 static const int START_AT_Y = -20;
 static const int PUSH_MOVEMENT[] = {0, 1, 2, 3, 4, 3, 2, 1};
-static const int NUMBER_OF_LINE = 10;
+static const int NUMBER_OF_LINE = 5;
 static const int BUFFER_SIZE = 1024;
 
 void get_term();
@@ -64,7 +64,7 @@ void init(void);
 void clear_all(int x);
 void clear_at(int x);
 void move_to_top(void);
-void draw(int x, const char *s);
+void draw(int x, char *s);
 void draw_empty(int x);
 
 void generate_std_art(int x);
@@ -77,14 +77,14 @@ typedef void (*draw_fn)(int x);
 draw_fn resolve_draw_fn(int argc, char **argv);
 
 // To keep your eyes unhurt :)!
-char *lines[];
+char *lines[NUMBER_OF_LINE];
 
 int main(int argc, char **argv)
 {
   char *tmp;
   draw_fn draw_fn;
   int errorCode = 0;
-  for (size_t i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  for (size_t i = 0; i < NUMBER_OF_LINE; ++i)
   {
     lines[i] = (char *)malloc(BUFFER_SIZE);
   }
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
   perror(GIT_CMD);
 
-  for (size_t i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  for (size_t i = 0; i < NUMBER_OF_LINE; ++i)
   {
     free(lines[i]);
   }
@@ -165,7 +165,7 @@ void init(void)
 void clear_all(int x)
 {
   move_to_top();
-  for (size_t i = 1; i < NUMBER_OF_LINE; ++i)
+  for (size_t i = 1; i < NUMBER_OF_LINE + 1; ++i)
   {
     clear_at(x);
   }
@@ -191,7 +191,7 @@ void move_to_x(int x)
   fprintf(TERM_FH, "\033[%dC", x);
 }
 
-void draw(int x, const char *s)
+void draw(int x, char *s)
 {
   int y;
   size_t i;
@@ -214,7 +214,7 @@ void draw_std(int x)
 {
   generate_std_art(x);
   move_to_top();
-  for (size_t i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  for (int i = 0; i < NUMBER_OF_LINE; ++i)
   {
     draw(x, lines[i]);
   }
@@ -226,62 +226,42 @@ void generate_std_art(int x)
   int x1 = PUSH_MOVEMENT[(x - START_AT_Y) % 8];
   if (x1 == 0)
   {
-    strcpy(lines[0], "                                       ");
+    strcpy(lines[0], "             ~=[,,_,,]:3               ");
     strcpy(lines[1], "                                       ");
-    strcpy(lines[2], "             ~=[,,_,,]:3               ");
-    strcpy(lines[3], "                                       ");
+    strcpy(lines[2], "     |                                 ");
+    strcpy(lines[3], "   --*--                               ");
     strcpy(lines[4], "     |                                 ");
-    strcpy(lines[5], "   --*--                               ");
-    strcpy(lines[6], "     |                                 ");
-    strcpy(lines[7], "                                       ");
-    strcpy(lines[8], "                                       ");
   }
   else if (x1 == 1)
   {
     strcpy(lines[0], "                                       ");
+    strcpy(lines[1], "             ~=[,,_,,]:3               ");
+    strcpy(lines[2], "                                       ");
+    strcpy(lines[3], "     *                                 ");
+    strcpy(lines[4], "                                       ");
+  }
+  else if (x1 == 2)
+  {
+    strcpy(lines[0], "                                  *    ");
+    strcpy(lines[1], "                                       ");
+    strcpy(lines[2], "             ~=[,,_,,]:3               ");
+    strcpy(lines[3], "     .                                 ");
+    strcpy(lines[4], "                                       ");
+  }
+  else if (x1 == 3)
+  {
+    strcpy(lines[0], "                                   .   ");
     strcpy(lines[1], "                                       ");
     strcpy(lines[2], "                                       ");
     strcpy(lines[3], "             ~=[,,_,,]:3               ");
     strcpy(lines[4], "                                       ");
-    strcpy(lines[5], "     *                                 ");
-    strcpy(lines[6], "                                       ");
-    strcpy(lines[7], "                                       ");
-    strcpy(lines[8], "                                       ");
-  }
-  else if (x1 == 2)
-  {
-    strcpy(lines[0], "                                       ");
-    strcpy(lines[1], "                                       ");
-    strcpy(lines[2], "                                  *    ");
-    strcpy(lines[3], "                                       ");
-    strcpy(lines[4], "             ~=[,,_,,]:3               ");
-    strcpy(lines[5], "     .                                 ");
-    strcpy(lines[6], "                                       ");
-    strcpy(lines[7], "                                       ");
-    strcpy(lines[8], "                                       ");
-  }
-  else if (x1 == 3)
-  {
-    strcpy(lines[0], "                                       ");
-    strcpy(lines[1], "                                       ");
-    strcpy(lines[2], "                                   .   ");
-    strcpy(lines[3], "                                       ");
-    strcpy(lines[4], "                                       ");
-    strcpy(lines[5], "             ~=[,,_,,]:3               ");
-    strcpy(lines[6], "                                       ");
-    strcpy(lines[7], "                                       ");
-    strcpy(lines[8], "                                       ");
   }
   else
   {
-    strcpy(lines[0], "                                       ");
+    strcpy(lines[0], "                                   +   ");
     strcpy(lines[1], "                                       ");
-    strcpy(lines[2], "                                   +   ");
+    strcpy(lines[2], "                                       ");
     strcpy(lines[3], "                                       ");
-    strcpy(lines[4], "                                       ");
-    strcpy(lines[5], "                                       ");
-    strcpy(lines[6], "             ~=[,,_,,]:3               ");
-    strcpy(lines[7], "                                       ");
-    strcpy(lines[8], "                                       ");
+    strcpy(lines[4], "             ~=[,,_,,]:3               ");
   }
 }
