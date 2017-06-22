@@ -84,7 +84,7 @@ int main(int argc, char **argv)
   char *tmp;
   draw_fn draw_fn;
   int errorCode = 0;
-  for (int i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  for (size_t i = 0; i < NUMBER_OF_LINE - 1; ++i)
   {
     lines[i] = (char *)malloc(BUFFER_SIZE);
   }
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
   perror(GIT_CMD);
 
-  for (int i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  for (size_t i = 0; i < NUMBER_OF_LINE - 1; ++i)
   {
     free(lines[i]);
   }
@@ -214,11 +214,11 @@ void draw_std(int x)
 {
   generate_std_art(x);
   move_to_top();
-  for (int i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  for (size_t i = 0; i < NUMBER_OF_LINE - 1; ++i)
   {
     draw(x, lines[i]);
   }
-  usleep(FRAME_TIME * 8);
+  usleep(FRAME_TIME * 4);
 }
 
 void generate_std_art(int x)
