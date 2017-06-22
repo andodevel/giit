@@ -55,7 +55,7 @@ int TERM_WIDTH;
 int FRAME_TIME;
 static const int START_AT_Y = -20;
 static const int PUSH_MOVEMENT[] = {0, 1, 2, 3, 4, 3, 2, 1};
-static const int NUMBER_OF_LINE = 8;
+static const int NUMBER_OF_LINE = 10;
 static const int BUFFER_SIZE = 1024;
 
 void get_term();
@@ -67,6 +67,7 @@ void move_to_top(void);
 void draw(int x, const char *s);
 void draw_empty(int x);
 
+void generate_std_art(int x);
 void draw_std(int x);
 void draw_clone(int x);
 void draw_push(int x);
@@ -75,11 +76,18 @@ void draw_status(int x);
 typedef void (*draw_fn)(int x);
 draw_fn resolve_draw_fn(int argc, char **argv);
 
+// To keep your eyes unhurt :)!
+char *lines[];
+
 int main(int argc, char **argv)
 {
   char *tmp;
   draw_fn draw_fn;
   int errorCode = 0;
+  for (int i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  {
+    lines[i] = (char *)malloc(BUFFER_SIZE);
+  }
 
   TERM_FH = fopen("/dev/tty", "w");
   if (!TERM_FH)
@@ -105,6 +113,12 @@ int main(int argc, char **argv)
   }
 
   perror(GIT_CMD);
+
+  for (int i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  {
+    free(lines[i]);
+  }
+
   return 1;
 }
 
@@ -162,7 +176,8 @@ void clear_at(int x)
   draw_empty(x);
 }
 
-void draw_empty(int x) {
+void draw_empty(int x)
+{
   draw(x, "                                               ");
 }
 
@@ -181,10 +196,12 @@ void draw(int x, const char *s)
   int y;
   size_t i;
 
-  if (x > 1) {
+  if (x > 1)
+  {
     move_to_x(x);
   }
-  for (y = x, i = 0; i < strlen(s); y++, i++) {
+  for (y = x, i = 0; i < strlen(s); y++, i++)
+  {
     if (y > 0 && y < TERM_WIDTH)
       fputc(s[i], TERM_FH);
   }
@@ -195,73 +212,76 @@ void draw(int x, const char *s)
 
 void draw_std(int x)
 {
-  int x1 = PUSH_MOVEMENT[(x - START_AT_Y) % 8];
+  generate_std_art(x);
   move_to_top();
-  char buff[100];
+  for (int i = 0; i < NUMBER_OF_LINE - 1; ++i)
+  {
+    draw(x, lines[i]);
+  }
+  usleep(FRAME_TIME * 8);
+}
 
-  draw(x, "                                       ");
-  draw(x, "                                       ");
+void generate_std_art(int x)
+{
+  int x1 = PUSH_MOVEMENT[(x - START_AT_Y) % 8];
   if (x1 == 0)
   {
-    sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
-            ANSI_COLOR_RESET);
-    draw(x, buff);
-    sprintf(buff, "                                       ");
-    draw(x, buff);
-    sprintf(buff, "     %s|%s                                 ",
-            ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-    draw(x, buff);
-    sprintf(buff, "   %s--*--%s                               ",
-            ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-    draw(x, buff);
-    sprintf(buff, "     %s|%s                                 ",
-            ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
-    draw(x, buff);
+    strcpy(lines[0], "                                       ");
+    strcpy(lines[1], "                                       ");
+    strcpy(lines[2], "             ~=[,,_,,]:3               ");
+    strcpy(lines[3], "                                       ");
+    strcpy(lines[4], "     |                                 ");
+    strcpy(lines[5], "   --*--                               ");
+    strcpy(lines[6], "     |                                 ");
+    strcpy(lines[7], "                                       ");
+    strcpy(lines[8], "                                       ");
   }
   else if (x1 == 1)
   {
-    draw(x, "                                *      ");
-    sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
-            ANSI_COLOR_RESET);
-    draw(x, buff);
-    draw(x, "                                       ");
-    sprintf(buff, "     %s*%s                                 ",
-            ANSI_COLOR_GREEN, ANSI_COLOR_RESET);
-    draw(x, buff);
-    draw(x, "                                       ");
+    strcpy(lines[0], "                                       ");
+    strcpy(lines[1], "                                       ");
+    strcpy(lines[2], "                                       ");
+    strcpy(lines[3], "             ~=[,,_,,]:3               ");
+    strcpy(lines[4], "                                       ");
+    strcpy(lines[5], "     *                                 ");
+    strcpy(lines[6], "                                       ");
+    strcpy(lines[7], "                                       ");
+    strcpy(lines[8], "                                       ");
   }
   else if (x1 == 2)
   {
-    draw(x, "                                       ");
-    sprintf(buff, "                                 %s.%s     ",
-            ANSI_COLOR_BLUE, ANSI_COLOR_RESET);
-    draw(x, buff);
-    sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
-            ANSI_COLOR_RESET);
-    draw(x, buff);
-    draw(x, "     .                                 ");
-    draw(x, "                                       ");
+    strcpy(lines[0], "                                       ");
+    strcpy(lines[1], "                                       ");
+    strcpy(lines[2], "                                  *    ");
+    strcpy(lines[3], "                                       ");
+    strcpy(lines[4], "             ~=[,,_,,]:3               ");
+    strcpy(lines[5], "     .                                 ");
+    strcpy(lines[6], "                                       ");
+    strcpy(lines[7], "                                       ");
+    strcpy(lines[8], "                                       ");
   }
   else if (x1 == 3)
   {
-    draw(x, "                                       ");
-    draw(x, "                                       ");
-    draw(x, "                                       ");
-    sprintf(buff, "             %s~%s=[,,_,,]:3               ", ANSI_COLOR_RED,
-            ANSI_COLOR_RESET);
-    draw(x, buff);
-    draw(x, "                                       ");
+    strcpy(lines[0], "                                       ");
+    strcpy(lines[1], "                                       ");
+    strcpy(lines[2], "                                   .   ");
+    strcpy(lines[3], "                                       ");
+    strcpy(lines[4], "                                       ");
+    strcpy(lines[5], "             ~=[,,_,,]:3               ");
+    strcpy(lines[6], "                                       ");
+    strcpy(lines[7], "                                       ");
+    strcpy(lines[8], "                                       ");
   }
   else
   {
-    draw(x, "                                       ");
-    draw(x, "                                       ");
-    sprintf(buff, "                                 %s*%s     ",
-            ANSI_COLOR_BLUE, ANSI_COLOR_RESET);
-    draw(x, buff);
-    draw(x, " .                                     ");
-    draw(x, "             ~=[,,_,,]:3               ");
+    strcpy(lines[0], "                                       ");
+    strcpy(lines[1], "                                       ");
+    strcpy(lines[2], "                                   +   ");
+    strcpy(lines[3], "                                       ");
+    strcpy(lines[4], "                                       ");
+    strcpy(lines[5], "                                       ");
+    strcpy(lines[6], "             ~=[,,_,,]:3               ");
+    strcpy(lines[7], "                                       ");
+    strcpy(lines[8], "                                       ");
   }
-
-  usleep(FRAME_TIME * 8);
 }
