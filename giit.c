@@ -183,7 +183,7 @@ void draw_empty(int x)
 
 void move_to_top(void)
 {
-  fprintf(TERM_FH, "\033[7A");
+  fprintf(TERM_FH, "\033[%dA", NUMBER_OF_LINE);
 }
 
 void move_to_x(int x)
