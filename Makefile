@@ -6,7 +6,7 @@ CFLAGS+=-O2 -std=gnu99 -Wpedantic -Wall -Wextra -Wunused -Wshadow -Wstrict-overf
 INSTALL=install -D
 INSTALL_DATA=$(INSTALL) -m 644
 
-BINDIR=$(HOME)/bin
+BINDIR=/usr/local/bin
 MANDIR=$(DESTDIR)/usr/share/man/man6
 
 STRIP=strip
